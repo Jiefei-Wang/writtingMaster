@@ -1,0 +1,126 @@
+body {
+    padding: 10px;
+    background-color: #f8f9fa;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.container-fluid {
+    height: 100%;
+}
+
+.panel {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    padding: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+}
+
+.text-editor-container {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 10px;
+    flex-grow: 1;
+    overflow: auto;
+    background-color: #fff;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.highlight {
+    opacity: 0.9;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.results-container {
+    margin-top: 10px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.result-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-left: 3px solid #007bff;
+    background-color: #f8f9fa;
+}
+
+.module-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    font-size: 0.9rem;
+}
+
+.module-item:hover {
+    background-color: #e9ecef;
+}
+
+.loading {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Custom height for panels */
+.row {
+    height: calc(100vh - 80px);
+    margin: 0;
+}
+
+.col-md-3, .col-md-6 {
+    height: 100%;
+    padding: 0 5px;
+}
+
+.panel-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header styling */
+.header {
+    margin-bottom: 10px;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.header p {
+    font-size: 0.9rem;
+    margin: 0;
+}

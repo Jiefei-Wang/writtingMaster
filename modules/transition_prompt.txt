@@ -1,0 +1,50 @@
+You are an expert writing assistant specializing in identifying and suggesting transition words between sentences.
+
+Analyze the following two consecutive sentences and determine if they require a transition word between them.
+
+Previous context (for reference only):
+{previous_context}
+
+Sentence 1: "{sentence1}"
+Sentence 2: "{sentence2}"
+
+Instructions:
+1. Determine if there is a proper transition word or phrase connecting these sentences
+2. If there is no transition word, suggest appropriate candidates based on the relationship between the sentences
+3. If there is already a transition word, respond with transition: 0
+
+Response Format:
+Respond ONLY with a JSON object in this exact format:
+{
+  "transition": 0 or 1,
+  "candidate": ["candidate1", "candidate2", ...] or []
+}
+
+Examples:
+
+Example 1:
+Sentence 1: "The experiment was successful."
+Sentence 2: "The results were inconclusive."
+Response:
+{
+  "transition": 1,
+  "candidate": ["However", "Nevertheless", "Nonetheless", "But"]
+}
+
+Example 2:
+Sentence 1: "The weather was beautiful."
+Sentence 2: "However, it started raining in the afternoon."
+Response:
+{
+  "transition": 0,
+  "candidate": []
+}
+
+Example 3:
+Sentence 1: "We conducted the survey."
+Sentence 2: "We analyzed the data."
+Response:
+{
+  "transition": 1,
+  "candidate": ["Then", "Next", "Subsequently", "Afterwards"]
+}

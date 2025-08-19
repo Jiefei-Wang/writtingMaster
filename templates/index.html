@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Proofread Software</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="header text-center">
+            <h1>Write Proofread Software</h1>
+            <p class="text-muted">Select modules, edit text, and run analysis</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <div class="panel">
+                    <h2>Available Modules</h2>
+                    <div class="panel-content">
+                        <div id="moduleLoading" class="loading">Loading modules...</div>
+                        <ul class="list-group" id="moduleList" style="display: none;">
+                            <!-- Modules will be dynamically added here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="panel">
+                    <h2>Text Editor</h2>
+                    <div class="panel-content">
+                        <button class="btn btn-primary mb-2" id="runButton" disabled>Run Selected Modules</button>
+                        <div class="text-editor-container" id="textEditor" contenteditable="true"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="panel">
+                    <h2>Results</h2>
+                    <div class="panel-content">
+                        <div class="results-container" id="resultsContainer">
+                            <!-- Results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

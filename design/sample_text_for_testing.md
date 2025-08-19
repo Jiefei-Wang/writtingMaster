@@ -1,0 +1,18 @@
+# Sample Text for Testing
+
+This is a sample text file that we can use to test our proofreading software. It contains several instances of isolated pronouns that our module should identify.
+
+This sentence starts with an isolated pronoun. That sentence also starts with one. These sentences are examples. Those examples are useful for testing.
+
+In the middle of a sentence, we might find this kind of construction. Or that kind of pattern. These kinds of examples are helpful. Those types of sentences work too.
+
+Some pronouns should not be matched, like "this" when it's part of a larger word like "thisexample" or "anotherthis". Similarly, "that" in "thatexample" should not be matched.
+
+But standalone pronouns like this one should be identified. That one too. These are clear cases. Those are also obvious.
+
+This.
+That.
+These.
+Those.
+
+The end of the text.
