@@ -4,45 +4,12 @@ from dotenv import load_dotenv
 from llm_output_parser import parse_json
 from openai import OpenAI
 from modules.settings import load_settings
+from tqdm import tqdm
+import multiprocessing as mp
+import os
+from modules.transition.worker import process_pair
 load_dotenv()
 
-
-def get_prompts(contexts, sentence1s, sentence2s):
-    prompts = []
-    with open("modules/transition/prompt.txt") as f:
-        prompt_template = f.read()
-    for context, s1, s2 in zip(contexts, sentence1s, sentence2s):
-        prompt = prompt_template.replace(
-            "{previous_context}", context
-            ).replace(
-                "{sentence1}", s1
-            ).replace(
-                "{sentence2}", s2
-            )
-        prompts.append(prompt)
-    return prompts
-
-def extract(context, sentence1, sentence2):
-    base_url = load_settings().get("llm_service", {}).get("base_url", None)
-    client = OpenAI(
-        base_url=base_url
-    )
-    prompts = get_prompts([context], [sentence1], [sentence2])
-    prompt = prompts[0]
-
-    completion = client.chat.completions.create(
-        model = "gemma3:4b",
-        messages=[
-            {"role": "developer", "content": "Extract the information based on user's instruction"},
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    )
-
-    data = parse_json(completion.choices[0].message.content)
-    return data
 
 def offset_and_strip(text):
     s = text.lstrip()
@@ -81,8 +48,6 @@ def split_into_sentences(paragraph: dict):
 
 
 
-
-
 class TransitionModule(BaseModule):
     def name(self) -> str:
         return "transition"
@@ -96,6 +61,10 @@ class TransitionModule(BaseModule):
         paragraphs = split_into_paragraphs(text)
         results = []
 
+        previous_contexts = []
+        first_sentences = []
+        second_sentences = []
+        second_sentence_starts = []
         for paragraph in paragraphs:
             paragraph_text = paragraph['text']
             start_paragraph = paragraph['start']
@@ -108,26 +77,20 @@ class TransitionModule(BaseModule):
                 else:
                     previous_context = sentences[i - 1]['text']
 
-                # Use Kor to extract
-                try:
-                    extraction_result = extract(previous_context, first_sentence['text'], second_sentence['text'])
-                    transition = extraction_result.get("transition", 0)
-                    candidates = extraction_result.get("candidates", '')
-                    if int(transition) == 0 or candidates == '':
-                        continue
-                    else:
-                        second_sentence_words = second_sentence['text'].split()
-                        second_sentence_first_word = second_sentence_words[0] 
-                        start = second_sentence['start']
-                        end = start + len(second_sentence_first_word)
-                        results.append({
-                            "start": start,
-                            "end": end,
-                            "explanation": f"Lack of transition, Potential candidates: {candidates}"
-                        })
-                except Exception as e:
-                    print(f"Error processing sentence pair: {e}")
-                    continue
+                previous_contexts.append(previous_context)
+                first_sentences.append(first_sentence['text'])
+                second_sentences.append(second_sentence['text'])
+                second_sentence_starts.append(second_sentence['start'])
+
+        # Parallelize extraction across all collected sentence pairs with a progress bar
+        tasks = list(zip(previous_contexts, first_sentences, second_sentences, second_sentence_starts))
+        if tasks:
+            proc_count = 10
+            with mp.Pool(processes=proc_count) as pool, tqdm(total=len(tasks), desc="Transitions", unit="pair") as pbar:
+                for res in pool.imap_unordered(process_pair, tasks, chunksize=1):
+                    if res:
+                        results.append(res)
+                    pbar.update(1)
 
         results.sort(key=lambda x: x["start"])
         return {

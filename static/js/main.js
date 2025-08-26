@@ -9,6 +9,16 @@ let moduleResults = {};
 let isProcessingText = false;
 let originalText = '';
 
+// Convert newlines to <br> tags (for visual line breaks in contentEditable)
+function convertNewlinesToBr(str) {
+    return typeof str === 'string' ? str.replace(/\n/g, '<br>') : str;
+}
+
+// Centralized way to update the editor's HTML, always using <br> for line breaks
+function setEditorHTML(htmlString) {
+    document.getElementById('textEditor').innerHTML = convertNewlinesToBr(htmlString);
+}
+
 // Function to discover modules
 async function discoverModules() {
     try {
@@ -189,7 +199,8 @@ function applyHighlights(text) {
     }
 
     // Set the highlighted text in the editor
-    document.getElementById('textEditor').innerHTML = highlightedText;
+    // Important: highlight first, then convert newlines to <br> to keep positions correct
+    setEditorHTML(highlightedText);
 }
 
 // Determine highlight color based on modules
@@ -250,21 +261,37 @@ function handlePaste(event) {
     // Get plain text from clipboard
     const text = (event.clipboardData || window.clipboardData).getData('text/plain');
 
-    // Insert text at cursor position
+    // Insert text at cursor position, converting newlines to <br>
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
 
     const range = selection.getRangeAt(0);
     range.deleteContents();
 
-    const textNode = document.createTextNode(text);
-    range.insertNode(textNode);
+    const lines = text.split(/\r?\n/);
+    const frag = document.createDocumentFragment();
+    let lastNode = null;
+    lines.forEach((line, idx) => {
+        const node = document.createTextNode(line);
+        frag.appendChild(node);
+        lastNode = node;
+        if (idx < lines.length - 1) {
+            const br = document.createElement('br');
+            frag.appendChild(br);
+            lastNode = br;
+        }
+    });
 
-    // Move cursor to end of inserted text
-    range.setStartAfter(textNode);
-    range.setEndAfter(textNode);
-    selection.removeAllRanges();
-    selection.addRange(range);
+    range.insertNode(frag);
+
+    // Move cursor to end of inserted content
+    const newRange = document.createRange();
+    if (lastNode) {
+        newRange.setStartAfter(lastNode);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    }
 }
 
 // Handle keydown events for special handling
@@ -287,23 +314,18 @@ function handleKeyDown(event) {
 
 // Initialize the interface
 function init() {
-    // Load sample text
-    document.getElementById('textEditor').textContent = `This is a sample text file that we can use to test our proofreading software. It contains several instances of isolated pronouns that our module should identify.
 
-This sentence starts with an isolated pronoun. That sentence also starts with one. These sentences are examples. Those examples are useful for testing.
-
-In the middle of a sentence, we might find this kind of construction. Or that kind of pattern. These kinds of examples are helpful. Those types of sentences work too.
-
-Some pronouns should not be matched, like "this" when it's part of a larger word like "thisexample" or "anotherthis". Similarly, "that" in "thatexample" should not be matched.
-
-But standalone pronouns like this one should be identified. That one too. These are clear cases. Those are also obvious.
-
-This.
-That.
-These.
-Those.
-
-The end of the text.`;
+    // Load sample text from API
+    fetch('/api/sample-text')
+        .then(response => response.text())
+        .then(sampleText => {
+            // Use centralized updater: convert \n to <br>
+            setEditorHTML(sampleText);
+        })
+        .catch(error => {
+            document.getElementById('textEditor').textContent = 'Error loading sample text.';
+            console.error('Error loading sample text:', error);
+        });
 
     // Discover modules
     discoverModules();

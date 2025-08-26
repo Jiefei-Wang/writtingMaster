@@ -6,6 +6,17 @@ from modules.base_module import BaseModule
 
 app = Flask(__name__)
 
+# Serve sample text from text/sample.txt
+@app.route('/api/sample-text', methods=['GET'])
+def get_sample_text():
+    """Serve the sample text from text/example.txt"""
+    try:
+        with open('text/example.txt', 'r', encoding='utf-8') as f:
+            sample_text = f.read()
+        return sample_text, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    except Exception as e:
+        return f"Error loading sample text: {e}", 500
+
 def discover_modules():
     """Discover and load all modules from the modules directory"""
     modules = {}
