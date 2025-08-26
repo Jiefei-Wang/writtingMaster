@@ -16,31 +16,30 @@ def discover_modules():
         print("Error: modules directory not found")
         return modules
     
-    # Iterate through all Python files in the modules directory
-    for filename in os.listdir(modules_dir):
-        if filename.endswith(".py") and filename != "__init__.py" and filename != "base_module.py":
-            module_name = filename[:-3]  # Remove .py extension
-            module_path = os.path.join(modules_dir, filename)
-            
-            # Load the module dynamically
-            try:
-                spec = importlib.util.spec_from_file_location(module_name, module_path)
-                if spec is None:
-                    print(f"Warning: Failed to load module spec for {module_name}")
-                    continue
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                # Find the module class (assuming it's the only class that inherits from BaseModule)
-                for attr_name in dir(module):
-                    attr = getattr(module, attr_name)
-                    if isinstance(attr, type) and issubclass(attr, BaseModule) and attr != BaseModule:
-                        module_instance = attr()
-                        modules[module_instance.name()] = module_instance
-                        break
-            except Exception as e:
-                print(f"Warning: Failed to load module {module_name}: {e}")
-    
+    # Iterate through all subdirectories in the modules directory
+    for subfolder in os.listdir(modules_dir):
+        subfolder_path = os.path.join(modules_dir, subfolder)
+        if os.path.isdir(subfolder_path):
+            module_file = f"module.py"
+            module_path = os.path.join(subfolder_path, module_file)
+            if os.path.isfile(module_path):
+                module_name = f"{subfolder}.module_file"
+                try:
+                    spec = importlib.util.spec_from_file_location(module_name, module_path)
+                    if spec is None or spec.loader is None:
+                        print(f"Warning: Failed to load module spec or loader for {module_name}")
+                        continue
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    # Find the module class (assuming it's the only class that inherits from BaseModule)
+                    for attr_name in dir(module):
+                        attr = getattr(module, attr_name)
+                        if isinstance(attr, type) and issubclass(attr, BaseModule) and attr != BaseModule:
+                            module_instance = attr()
+                            modules[module_instance.name()] = module_instance
+                            break
+                except Exception as e:
+                    print(f"Warning: Failed to load module {module_name}: {e}")
     return modules
 
 @app.route('/')

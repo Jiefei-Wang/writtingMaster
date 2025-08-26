@@ -9,26 +9,26 @@ class IsolatedPronounsModule(BaseModule):
         return "Identifies isolated pronouns that don't carry specific meaning by themselves"
     
     def process(self, text: str) -> dict:
-        # Define isolated pronouns to match
-        pronouns = ["this", "that", "these", "those"]
+        pronouns = [
+            "this",
+            "that",
+            "these",
+            "those",
+            "it",
+            "they",
+            "them"
+        ]
         results = []
-        
-        # Find all pronouns in the text
         for pronoun in pronouns:
-            # Use word boundaries to match whole words only
             pattern = r'\b' + re.escape(pronoun) + r'\b'
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 results.append({
-                    "text_span": match.group(),
-                    "position": match.start(),
+                    "start": match.start(),
+                    "end": match.end(),
                     "explanation": "isolated pronoun"
                 })
-        
-        # Sort results by position
-        results.sort(key=lambda x: x["position"])
-        
+        results.sort(key=lambda x: x["start"])
         return {
             "module_name": self.name(),
-            "module_description": self.description(),
             "results": results
         }

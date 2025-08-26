@@ -1,0 +1,51 @@
+Analyze the following two consecutive sentences and determine if they must need a transition word between them.
+
+Previous context (for reference only, if empty, it is the beginning of the paragraph):
+{previous_context}
+
+Sentence 1: "{sentence1}"
+Sentence 2: "{sentence2}"
+
+
+Response Format:
+Respond ONLY with a JSON object in this exact format (do NOT output CSV or any other format):
+{
+  "transition": 0 or 1,
+  "candidates": "candidate1, candidate2, candidate3" or ""
+}
+
+
+Instructions:
+1. Determine if there needs a transition word between sentence1 and sentence2. Be conservative, only use transition word when you feel it looks awkward otherwise.
+2. If a transition word is needed but there isn't, suggest appropriate candidates based on the relationship between the sentences
+3. If there is already a proper transition word, respond with transition: 0
+
+
+Examples:
+
+Example 1:
+Sentence 1: "The experiment was successful."
+Sentence 2: "The results were inconclusive."
+Response:
+{
+  "transition": 1,
+  "candidates": "However, Nevertheless, Nonetheless, But"
+}
+
+Example 2:
+Sentence 1: "The weather was beautiful."
+Sentence 2: "However, it started raining in the afternoon."
+Response:
+{
+  "transition": 0,
+  "candidates": ""
+}
+
+Example 3:
+Sentence 1: "We conducted the survey."
+Sentence 2: "We analyzed the data."
+Response:
+{
+  "transition": 1,
+  "candidates": "Then, Next, Subsequently, Afterwards"
+}

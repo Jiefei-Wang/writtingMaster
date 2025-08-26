@@ -1,8 +1,6 @@
 {
   "llm_service": {
-    "service": "ollama",
-    "host": "localhost",
-    "port": 11434,
+    "base_url": "http://localhost:11434/v1",
     "model": "gemma3:4b"
   }
 }

@@ -120,10 +120,10 @@ function processResults(text, results) {
     // Clear previous highlights
     highlights = [];
 
-    // Collect all highlights from all modules
+    // Collect all highlights from all modules (each moduleResult is in standardized format)
     for (const moduleName in results) {
         const moduleResult = results[moduleName];
-        if (moduleResult.results) {
+        if (moduleResult && Array.isArray(moduleResult.results)) {
             highlights.push(...moduleResult.results.map(result => ({
                 ...result,
                 module_name: moduleName
@@ -146,15 +146,15 @@ function getTextFromEditor() {
 
 // Apply highlights to text
 function applyHighlights(text) {
-    // Sort highlights by position (descending order to preserve positions when inserting)
-    highlights.sort((a, b) => b.position - a.position);
+    // Sort highlights by start position (descending order to preserve positions when inserting)
+    highlights.sort((a, b) => b.start - a.start);
 
     // Create a map to track which positions are highlighted by which modules
     const highlightMap = new Map();
 
     // Populate highlight map
     highlights.forEach(highlight => {
-        const key = `${highlight.position}-${highlight.text_span.length}`;
+        const key = `${highlight.start}-${highlight.end}`;
         if (!highlightMap.has(key)) {
             highlightMap.set(key, []);
         }
@@ -166,10 +166,10 @@ function applyHighlights(text) {
 
     // Process each unique highlight position
     for (const [key, highlightItems] of highlightMap.entries()) {
-        const [position, length] = key.split('-').map(Number);
+        const [start, end] = key.split('-').map(Number);
 
         // Get the text span to highlight
-        const textSpan = highlightedText.substring(position, position + length);
+        const textSpan = highlightedText.substring(start, end);
 
         // Determine highlight color based on modules
         const moduleNames = highlightItems.map(item => item.module_name);
@@ -183,9 +183,9 @@ function applyHighlights(text) {
         const highlightSpan = `<span class="highlight" style="background-color: ${color}" data-modules="${modulesData}" data-explanations="${explanationsData}">${textSpan}</span>`;
 
         // Replace text with highlighted span
-        highlightedText = highlightedText.substring(0, position) +
+        highlightedText = highlightedText.substring(0, start) +
                           highlightSpan +
-                          highlightedText.substring(position + length);
+                          highlightedText.substring(end);
     }
 
     // Set the highlighted text in the editor

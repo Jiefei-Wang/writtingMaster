@@ -23,11 +23,10 @@ class BaseModule(ABC):
             dict: Results in standardized format
             {
                 "module_name": str,
-                "module_description": str,
                 "results": [
                     {
-                        "text_span": str,
-                        "position": int,
+                        "start": int,
+                        "end": int,
                         "explanation": str
                     }
                 ]
