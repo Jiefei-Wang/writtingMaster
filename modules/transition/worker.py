@@ -1,9 +1,8 @@
-from dotenv import load_dotenv
-from openai import OpenAI
+
 from modules.settings import load_settings
 from llm_output_parser import parse_json
+from modules.llm_adapter import chat_llm
 
-load_dotenv()
 
 
 def get_prompt(context, sentence1, sentence2):
@@ -20,25 +19,17 @@ def get_prompt(context, sentence1, sentence2):
 
 
 def extract(context, sentence1, sentence2):
-    llm_args = load_settings().get("llm_service", {})
-    llm_model = load_settings().get("llm_model", None)
-    client = OpenAI(
-        **llm_args
-    )
     prompt = get_prompt(context, sentence1, sentence2)
 
-    completion = client.chat.completions.create(
-        model = llm_model,
-        messages=[
+    messages=[
             {"role": "developer", "content": "Extract the information based on user's instruction"},
             {
                 "role": "user",
                 "content": prompt,
             },
-        ],
-    )
+        ]
 
-    content = completion.choices[0].message.content or "{}"
+    content = chat_llm(messages)
     try:
         data = parse_json(content)
     except Exception as e:

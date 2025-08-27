@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, render_template
+from modules.logger import module_logger
 import os
 import sys
 import importlib.util

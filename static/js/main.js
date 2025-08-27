@@ -19,6 +19,27 @@ function setEditorHTML(htmlString) {
     document.getElementById('textEditor').innerHTML = convertNewlinesToBr(htmlString);
 }
 
+// Extract plain text from HTML, converting <br> and common block closings back to \n
+function extractTextWithNewlinesFromHTML(html) {
+    if (typeof html !== 'string') return '';
+    // Normalize line breaks from HTML to \n
+    let normalized = html
+        // turn <br> variations into \n
+        .replace(/<br\s*\/?>/gi, '\n')
+        // add \n on closing tags for block elements
+        .replace(/<\/(div|p|li|h[1-6])>/gi, '\n')
+        // remove opening tags of those blocks
+        .replace(/<(div|p|li|h[1-6])[^>]*>/gi, '');
+
+    // Strip remaining tags safely
+    const temp = document.createElement('div');
+    temp.innerHTML = normalized;
+    let text = temp.textContent || temp.innerText || '';
+    // Normalize CRLF and non-breaking spaces
+    text = text.replace(/\r\n/g, '\n').replace(/\u00A0/g, ' ');
+    return text;
+}
+
 // Function to discover modules
 async function discoverModules() {
     try {
@@ -148,10 +169,8 @@ function processResults(text, results) {
 // Get text content from the editor
 function getTextFromEditor() {
     const editor = document.getElementById('textEditor');
-    // Get text content without HTML tags
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = editor.innerHTML;
-    return tempDiv.textContent || tempDiv.innerText || '';
+    // Convert visual breaks (<br>, blocks) back to \n to keep payload indices correct
+    return extractTextWithNewlinesFromHTML(editor.innerHTML);
 }
 
 // Apply highlights to text
@@ -302,7 +321,28 @@ function handleKeyDown(event) {
     }
 
     // Handle special keys that might affect highlights
-    if (event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Delete') {
+    if (event.key === 'Enter') {
+        // Enforce <br> for new lines to keep consistency
+        event.preventDefault();
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const br = document.createElement('br');
+        range.insertNode(br);
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+        setTimeout(() => {
+            document.getElementById('resultsContainer').innerHTML = '';
+        }, 10);
+        return;
+    }
+
+    if (event.key === 'Backspace' || event.key === 'Delete') {
         // These keys might affect highlight positions
         // In a more advanced implementation, you would track these changes
         // For now, we'll just clear results when these keys are pressed

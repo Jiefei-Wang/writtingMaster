@@ -1,50 +1,47 @@
 
-from modules.base_module import BaseModule
 from dotenv import load_dotenv
+
+from modules.logger import module_logger
+
+from modules.base_module import BaseModule
 from llm_output_parser import parse_json
-from openai import OpenAI
-from modules.settings import load_settings
-from tqdm import tqdm
-import multiprocessing as mp
-import os
-from modules.transition.worker import process_pair
+from modules.sentence_splitter import split_into_paragraphs, split_into_sentences
+from modules.llm_adapter import batch_chat_llm
 load_dotenv()
 
 
-def offset_and_strip(text):
-    s = text.lstrip()
-    offset = len(text) - len(s)
-    s = s.rstrip()
-    return s, offset
+def get_messages(context, sentence1, sentence2):
+    with open("modules/transition/prompt.txt") as f:
+        prompt_template = f.read()
+    prompt = prompt_template.replace(
+            "{previous_context}", context
+            ).replace(
+                "{sentence1}", sentence1
+            ).replace(
+                "{sentence2}", sentence2
+            )
+    
+    messages=[
+            {"role": "developer", "content": "Extract the information based on user's instruction"},
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ]
+    return messages
 
-def split_into_paragraphs(text: str):
-    """Split text into paragraphs based on single newlines. Returns list of dicts with 'text' and 'start' (position in original text). Empty paragraphs are included if there are multiple newlines."""
-    paragraphs = []
-    idx = 0
-    lines = text.split('\n')
-    for line in lines:
-        s, offset = offset_and_strip(line)
-        if s!="":
-            paragraphs.append({'text': s, 'start': idx + offset})
-        idx += len(line) + 1  # +1 for the split '\n'
-    return paragraphs
 
-def split_into_sentences(paragraph: dict):
-    """Split paragraph into sentences based on periods. Returns list of dicts with 'text' and 'start' (index in raw text)."""
-    para_text = paragraph['text']
-    para_start = paragraph['start']
-    if para_text=='': 
-        return []
-    sentences = []
-    idx = 0
-    parts = para_text.split('.')
-    for i, part in enumerate(parts):
-        ## count how many spaces before the sentence and add to the start position
-        s, offset = offset_and_strip(part)
-        if s!="":
-            sentences.append({'text': s, 'start': idx + para_start + offset})
-        idx = idx + len(part) + 1
-    return sentences
+def extract_json(messages_list):
+    content_list = batch_chat_llm(messages_list)
+    data_list = []
+    for content in content_list:
+        try:
+            data = parse_json(content)
+        except Exception as e:
+            print(f"Failed to parse LLM output: {e}")
+            data = {}
+        data_list.append(data)
+    return data_list
 
 
 
@@ -61,13 +58,12 @@ class TransitionModule(BaseModule):
         paragraphs = split_into_paragraphs(text)
         results = []
 
+        ## prepare the sentences for llm prompt
         previous_contexts = []
         first_sentences = []
         second_sentences = []
         second_sentence_starts = []
         for paragraph in paragraphs:
-            paragraph_text = paragraph['text']
-            start_paragraph = paragraph['start']
             sentences = split_into_sentences(paragraph)
             for i in range(len(sentences) - 1):
                 first_sentence = sentences[i]
@@ -82,16 +78,35 @@ class TransitionModule(BaseModule):
                 second_sentences.append(second_sentence['text'])
                 second_sentence_starts.append(second_sentence['start'])
 
-        # Parallelize extraction across all collected sentence pairs with a progress bar
-        tasks = list(zip(previous_contexts, first_sentences, second_sentences, second_sentence_starts))
-        if tasks:
-            proc_count = 10
-            with mp.Pool(processes=proc_count) as pool, tqdm(total=len(tasks), desc="Transitions", unit="pair") as pbar:
-                for res in pool.imap_unordered(process_pair, tasks, chunksize=1):
-                    if res:
-                        results.append(res)
-                    pbar.update(1)
+        # get prompts and send to llm for data extraction
+        # return json
+        messages_list = [get_messages(ctx, s1, s2) for ctx, s1, s2 in zip(previous_contexts, first_sentences, second_sentences)]
+        
+        module_logger.info(f"Transition: Sending {len(messages_list)} messages to LLM")
+        json_list = extract_json(messages_list)
 
+        results = []
+        for json_result, s2_text, s2_start in zip(json_list, second_sentences, second_sentence_starts):
+            transition = int(json_result.get("transition", 0)) if isinstance(json_result, dict) else 0
+            candidates = json_result.get("candidates", "") if isinstance(json_result, dict) else ""
+            if transition == 0 or candidates == "":
+                continue
+            words = s2_text.split()
+            if not words:
+                continue
+            first_word = words[0]
+            start = s2_start
+            end = start + len(first_word)
+            results.append({
+                "start": start,
+                "end": end,
+                "explanation": f"Lack of transition, Potential candidates: {candidates}",
+            })
+            
+        module_logger.info(f"Transition: Obtained {len(results)} results")
+
+        
+        
         results.sort(key=lambda x: x["start"])
         return {
             "module_name": self.name(),

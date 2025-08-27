@@ -1,5 +1,7 @@
 from modules.base_module import BaseModule
 import re
+from modules.logger import module_logger
+
 
 class IsolatedPronounsModule(BaseModule):
     def name(self) -> str:
@@ -28,6 +30,7 @@ class IsolatedPronounsModule(BaseModule):
                     "explanation": "isolated pronoun"
                 })
         results.sort(key=lambda x: x["start"])
+        module_logger.info(f"IsolatedPronouns: Found {len(results)} isolated pronouns")
         return {
             "module_name": self.name(),
             "results": results
